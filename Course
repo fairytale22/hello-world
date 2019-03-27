@@ -13,25 +13,24 @@ public class Course {
         }
         int size  = tenPercent * 9 + (C - tenPercent);
         int[] allCourse = new int[size];
-        for (int i=0;i<size ;i++){
-            allCourse[i] = i+1;
-            System.out.println("allCourse["+i+"]="+ (i+1)+";");
+        for (int i=0;i<C ;i++){
             if (i<tenPercent){
                 for (int j=0;j<8;j++){
                     allCourse[C+i+j*tenPercent] = i+1;
                     System.out.println("allCourse["+ (C+i+j*tenPercent) +"]="+ (i+1)+";");
                 }
             }
+            allCourse[i] = i+1;
+            System.out.println("allCourse["+i+"]="+ (i+1)+";");
+
         }
         int randomIndex;
         Random random=new Random();
-        //Map<Integer,Set<Integer>> allStudent = new HashMap<>();
-        //List<Set<Integer>> allStudent = new ArrayList<Set<Integer>>();
 
         List<int[]> conflict = new ArrayList<>();
 
         //所有学生选取的所有课程
-       // int[] allChooseCourse = new int[S*K];
+        // int[] allChooseCourse = new int[S*K];
         Map<Integer,Integer> allChooseCourse = new HashMap<>();
         Map<Integer,Integer> needSplitCourse = new HashMap<>();
 
@@ -47,16 +46,20 @@ public class Course {
             Integer[] studentCourseArray = new Integer[K];
             studentCourse.toArray(studentCourseArray);
             System.out.println("第"+i+"个学生的选课："+Arrays.toString(studentCourseArray));
+
             //每个学生可能存在的所有的课程冲突
             for (int j = 0; j < K ; j++) {
-                //统计出每门课被选的次数
+                //统计出每门课被选的次数，根据sectionSize的最大值（4/3*sectionSize）进行分节
                 if (allChooseCourse.containsKey(studentCourseArray[j])){
                     allChooseCourse.put(studentCourseArray[j],allChooseCourse.get(studentCourseArray[j]).intValue()+1);
+                    int section = allChooseCourse.get(studentCourseArray[j]).intValue() / (sectionSize*4/3);
+                    //分节课程的替换编号
+                    studentCourseArray[j] = studentCourseArray[j] + C*section;
                 }else {
                     allChooseCourse.put(studentCourseArray[j], 1);
                 }
 
-               // allChooseCourse[(i-1)*K+j] = studentCourseArray[j];
+                // allChooseCourse[(i-1)*K+j] = studentCourseArray[j];
                 for (int l = j+1; l <K ; l++) {
                     int[] singleConflict = {studentCourseArray[j],studentCourseArray[l]};
                     conflict.add(singleConflict);
@@ -77,31 +80,56 @@ public class Course {
         System.out.println("needSplitCourse.size="+needSplitCourse.size()+",needSplitCourse:"+needSplitCourse.toString());
         System.out.println("allChooseCourse.size="+allChooseCourse.size()+",allChooseCourse:"+allChooseCourse.toString());
 
-        Set<String> noDuplicateCourseConflict = new HashSet<>();
+
+        Map<Integer,Set<Integer>> noDuplicateConflictOfNoSectionCourseSet = new HashMap<>();
+       // Map<Integer,List<Integer>> conflictOfSectionCourse =  new HashMap<>();
+        List<int[]>  noDuplicateConflictOfSectionCourse = new ArrayList<>();
+        //List<int[]> conflictOfSectionCourse = new ArrayList<>();
         Iterator<int[]> noSectionCourseConflictIterator = conflict.iterator();
-        int[] sigConflict;
-        String sigC;
         while (noSectionCourseConflictIterator.hasNext()){
-            sigConflict = noSectionCourseConflictIterator.next();
-            sigC = Arrays.toString(noSectionCourseConflictIterator.next());
+            int[] sigConflict = noSectionCourseConflictIterator.next();
             //if (!needSplitCourse.containsKey(sigConflict[0]) && !needSplitCourse.containsKey(sigConflict[1])){
-
-                noDuplicateCourseConflict.add(sigC);
-                System.out.println(sigC);
-           // }
+                if (noDuplicateConflictOfNoSectionCourseSet.containsKey(sigConflict[0])){
+                    if (noDuplicateConflictOfNoSectionCourseSet.get(sigConflict[0]).add(sigConflict[1])){
+                        noDuplicateConflictOfSectionCourse.add(sigConflict);
+                    }
+                }else{
+                    Set<Integer> value = new HashSet<>();
+                    value.add(sigConflict[1]);
+                    noDuplicateConflictOfNoSectionCourseSet.put(sigConflict[0],value);
+                    noDuplicateConflictOfSectionCourse.add(sigConflict);
+                }
+            //}
+            /*else{
+                if (needSplitCourse.containsKey(sigConflict[0])){
+                    if (conflictOfSectionCourse.containsKey(sigConflict[0])){
+                        conflictOfSectionCourse.get(sigConflict[0]).add(sigConflict[1]);
+                    }else{
+                        List<Integer> value = new ArrayList<>();
+                        value.add(sigConflict[1]);
+                        conflictOfSectionCourse.put(sigConflict[0],value);
+                    }
+                }else{
+                    if (conflictOfSectionCourse.containsKey(sigConflict[1])){
+                        conflictOfSectionCourse.get(sigConflict[1]).add(sigConflict[0]);
+                    }else{
+                        List<Integer> value = new ArrayList<>();
+                        value.add(sigConflict[0]);
+                        conflictOfSectionCourse.put(sigConflict[1],value);
+                    }
+                }
+                //conflictOfSectionCourse.add(sigConflict);
+            }*/
         }
+        // 去重之前所有可能的冲突
         System.out.println("conflict.size="+conflict.size());
-        System.out.println("noDuplicateCourseConflict.size="+noDuplicateCourseConflict.size());
-       // Arrays.sort(allChooseCourse);
-       // System.out.println("allChooseCourse.size="+allChooseCourse.length+";is"+Arrays.toString(allChooseCourse));
-        //输出S个学生分别从两级分布的C门课程中选出的K门课程
-        //System.out.println(allStudent.toString());
-
+        //去重之后所有可能的冲突
+        System.out.println("noDuplicateConflictOfSectionCourse.size="+noDuplicateConflictOfSectionCourse.size());
     }
 
 
     public static void main(String[] args){
 
-        courseSplit(50,100,20,30);
+        courseSplit(50,100,20,60);
     }
 }
